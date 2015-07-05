@@ -1,0 +1,199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>Game of Life 0.2</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<script src="jquery.js"></script>
+<style>
+table, td {
+	border: 1px solid black;
+}
+
+td{
+	width: 20px;
+	height: 20px;
+}
+
+.dead {
+	background-color: white;
+}
+
+.alive {
+	background-color: green;
+}
+</style>
+
+</head>
+<body>
+Game of Life
+<button onclick="initial()">Initialize</button>
+<button id="play" onclick="startStop(grid)">Start</button>
+<table id="grid">
+</table>
+
+<script>
+function initial(){
+	//destroy timer if there is one
+	if(timer){
+		clearInterval(timer);
+		$("#play").text("Start");
+	}
+	timer = null;
+	//create new grid object and display a visual grid
+	grid = emptyGrid(20,20);
+	grid = iniLivingCells(grid);
+	createGrid(grid);
+	markCell(grid);
+}
+
+//Create grid object
+function createGrid(grid){
+	var gridE = document.getElementById("grid");
+	gridE.innerHTML = "";
+	var rows = [];
+	var idcount = 0;
+	for(var y = 0; y<grid.height; y++){
+		rows[y] = "<tr>";
+		
+		for(var x = 0; x<grid.width; x++){
+			//rows[y] += "<td id='id"+x+y+"'></td>";
+			rows[y] += "<td id='id"+idcount+"'></td>";
+			idcount++;
+		}
+		rows[y] += "</tr>";
+	}
+		
+	for(var j = 0; j<grid.height; j++){
+		gridE.innerHTML += rows[j];
+	}
+}
+
+//Create empty grid object
+function emptyGrid(w, h){
+	var grid = {};
+	grid.width = w;
+	grid.height = h;
+	grid.cells = [];
+	var i = 0;
+	//populate cells
+	for(var y= 0; y<h; y++){
+		
+		for(var x= 0; x<w; x++){
+			//indexes of all neighbours of the target cell
+			var nbIndexes = [];
+			//four corners
+			if(x===0 && y===0){
+				//top left corner
+				nbIndexes = [i+1, i+grid.width, i+grid.width+1];
+			}else if(x===grid.width-1 && y===0){
+				//top right corner
+				nbIndexes = [i-1, i+grid.width, i+grid.width-1];
+			}else if(x===grid.width-1 && y===grid.height-1){
+				//bottom right corner
+				nbIndexes = [i-1, i-grid.width, i-grid.width-1];
+			}else if(x===0 && y===grid.height-1){
+				//bottom left corner
+				nbIndexes = [i+1, i-grid.width, i-grid.width+1];
+			//four borders
+			}else if(x===0){
+				//left border
+				nbIndexes = [i+1, i-grid.width, i-grid.width+1, i+grid.width, i+grid.width+1];
+			}else if(x===grid.width-1){
+				//right border
+				nbIndexes = [i-1, i-grid.width, i-grid.width-1, i+grid.width, i+grid.width-1];
+			}else if(y===0){
+				//top border
+				nbIndexes = [i+1, i-1, i+grid.width-1, i+grid.width+1, i+grid.width];
+			}else if(y===grid.height-1){
+				//bottom border
+				nbIndexes = [i+1, i-1, i-grid.width-1, i-grid.width+1, i-grid.width];
+			}else{
+				nbIndexes = [i-grid.width-1, i-grid.width, i-grid.width+1, i-1, i+1, i+grid.width-1, i+grid.width, i+grid.width+1];
+			}
+
+			grid.cells.push({y:y, x:x, status:'dead', nbIndexes: nbIndexes});
+			i++;
+
+		}
+	}
+
+	return grid;
+}
+
+//set initial living cells		
+function iniLivingCells(grid){
+	//random number of living cells being initialized
+	var no = 50;
+	//generate random cells
+	for(var i = 0; i< no; i++){
+		grid.cells[Math.floor(Math.random()*grid.cells.length)].status = 'alive';
+	}
+	//iterate(grid.cells);
+	return grid;
+}
+
+	function iterate(arr){
+		for (var i=0; i<arr.length; i++){
+			console.log('index: '+ i+' x: '+arr[i].x+' y: '+arr[i].y+' status: '+arr[i].status);
+		}
+	}
+	
+//get the alive neighbours, change the status of the target cell, re-mark the grid
+function dieNborn(grid){
+	for(var i=0; i<grid.cells.length; i++){
+		count = 0;
+		var x = grid.cells[i].x;
+		var y = grid.cells[i].y;
+		var nbIndexes = grid.cells[i].nbIndexes;
+		for(var j = 0; j<nbIndexes.length; j++){
+		
+			if(nbIndexes[j] < grid.cells.length && nbIndexes[j] >-1 && grid.cells[nbIndexes[j]].status === 'alive'){
+				count ++;
+			}
+		}
+		
+		if(grid.cells[i].status === 'alive'){
+			if(count <2 ){
+				grid.cells[i].status = 'dead';
+			}else if( count > 3){
+				grid.cells[i].status = 'dead';
+			}
+		}else{
+			if(count == 3){
+				grid.cells[i].status = 'alive';
+			}
+		}
+	}
+	//iterate(grid.cells);
+	markCell(grid);
+}
+
+//add classes to corresponding cells: alive or dead
+function markCell(grid){
+	createGrid(grid);
+	for(var c = 0; c<grid.cells.length; c++){
+		var id = '#id'+c;
+		$(id).addClass(grid.cells[c].status);
+		$(id).text(grid.cells[c].nbIndexes.length);
+	}
+}
+	
+//set timer
+var timer = null;
+function startStop(grid){
+	if(timer){
+		clearInterval(timer);
+		timer=null;
+		$("#play").text("Start");
+	 }else{
+		timer = setInterval(function(){dieNborn(grid);}, 1000);
+		$("#play").text("Stop");
+	}
+}
+	
+
+</script>
+</body>
+</html>
